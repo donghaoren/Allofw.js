@@ -27,6 +27,8 @@ function install_builtins(c, sketch) {
     c.allosphere = al;
     c.GL = al.OpenGL;
     c.graphics = graphics;
+    // Allow require.
+    c.require = require;
 }
 
 function Sketch(name) {
