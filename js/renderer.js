@@ -5,7 +5,7 @@ var zmq = require("zmq");
 var msgpack = require("msgpack");
 var al = require("node_allosphere");
 al.initialize();
-require("node-webgl").webgl.Init();
+//require("node-webgl").webgl.Init();
 
 var Sketch = require("./sketch.js").Sketch;
 

@@ -1,7 +1,7 @@
 var vm = require("vm");
 var al = require("node_allosphere");
 var graphics = require("node_graphics");
-var webgl = require("node-webgl").webgl;
+//var webgl = require("node-webgl").webgl;
 var util = require("util");
 var fs = require("fs-extra");
 var path = require("path");
@@ -54,7 +54,7 @@ function install_builtins(c, sketch) {
     c.Allosphere = al;
     c.GL = al.OpenGL;
     c.Graphics = graphics;
-    c.WebGL = webgl;
+    //c.WebGL = webgl;
 
     // Allow require.
     c.require = require;
