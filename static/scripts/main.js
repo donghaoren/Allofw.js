@@ -88,10 +88,18 @@ $("#btn-stop").click(function() {
 
 $("#btn-save").click(function() {
     updateCodeChanges();
-    gCurrentProject.save();
+    $("#status-text").text("Saving...");
+    gCurrentProject.save(function(err) {
+        if(!err) {
+            $("#status-text").text("Project saved.");
+        } else {
+            $("#status-text").text("Failed to save!");
+        }
+    });
 });
 
 function LoadProject(project) {
+    $(".sketch-name").text(project.name);
     gCurrentProject = project;
     $(".tablist-item").remove();
     $("#menu-tab-list").prepend(project.tabs.map(function(tab) {
