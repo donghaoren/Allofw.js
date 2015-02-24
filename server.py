@@ -19,8 +19,8 @@ with open("config.yaml", "rb") as f:
     config = yaml.load(f.read().decode("utf-8"))
     hostname = socket.gethostname()
     if hostname in config:
-        for entry in config['hostname']:
-            config[entry] = config['hostname'][entry]
+        for entry in config[hostname]:
+            config[entry] = config[hostname][entry]
 
 # ZMQ context.
 zmq_context = zmq.Context()
@@ -152,6 +152,6 @@ resource = WebSocketResource(factory)
 root.putChild("ws", resource)
 
 site = Site(root)
-reactor.listenTCP(int(config['webserver']['port']), site, config['webserver']['listen'])
+reactor.listenTCP(int(config['webserver']['port']), site, interface = config['webserver']['listen'])
 
 reactor.run()

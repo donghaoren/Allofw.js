@@ -83,7 +83,6 @@ Sketch.prototype.loadCode = function(project) {
         return;
     }
     try {
-        process.chdir(this.working_directory);
         for(var i = 0; i < this.scripts.length; i++) {
             this.scripts[i].runInContext(this.context);
         }
@@ -95,7 +94,6 @@ Sketch.prototype.loadCode = function(project) {
 Sketch.prototype.callFunction = function(name) {
     if(!this.context) return;
     try {
-        process.chdir(this.working_directory);
         if(this.context[name]) {
             vm.runInContext(name + "();", this.context);
         }
