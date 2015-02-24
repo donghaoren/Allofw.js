@@ -99,7 +99,7 @@ $("#btn-save").click(function() {
 });
 
 function LoadProject(project) {
-    $("#btn-run").text("Run " + project.name);
+    $(".sketch-name").text(project.name);
     gCurrentProject = project;
     $(".tablist-item").remove();
     $("#menu-tab-list").prepend(project.tabs.map(function(tab) {
