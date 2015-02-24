@@ -1,22 +1,44 @@
 var vm = require("vm");
 var al = require("node_allosphere");
 var graphics = require("node_graphics");
+var webgl = require("node-webgl").webgl;
+var util = require("util");
+var fs = require("fs-extra");
+var path = require("path");
+var config = require("./config.js");
+var coffeescript = require("coffee-script");
 
 function install_builtins(c, sketch) {
     // Math functions and constants.
-    [ "E", "LN2", "LN10", "LOG2E", "LOG10E", "PI", "SQRT1_2", "SQRT2",
-      "abs", "acos", "asin", "atan", "atan2", "ceil", "cos", "exp",
-      "floor", "log", "max", "min", "pow", "random", "round",
-      "sin", "sqrt", "tan"
+    // Note: Not all of them are supported in NodeJS.
+    ["E", "LN2", "LN10", "LOG2E", "LOG10E", "PI", "SQRT1_2", "SQRT2",
+     "abs", "acos", "acosh", "asin", "asinh", "atan", "atan2", "atanh",
+     "cbrt", "ceil", "clz32", "cos", "cosh", "exp", "expm1", "floor",
+     "fround", "hypot", "imul", "log", "log1p", "log2", "log10", "max",
+     "min", "pow", "random", "round", "sign", "sin", "sinh", "sqrt",
+     "tan", "tanh", "trunc"
     ].forEach(function(name) {
         c[name] = Math[name];
     });
+
     // Rendering functions.
-    c.console = { };
-    c.log = function(message) {
-        console.log(message);
+    c.println = function() {
+        var items = [];
+        for(var i = 0; i < arguments.length; i++) {
+            items.push(util.inspect(arguments[i]));
+        }
+        sketch._postMessage({
+            type: "log",
+            text: items.join(" ")
+        });
     };
+    c.console = { };
+    c.print = c.println;
     c.console.log = c.log;
+
+    c.exit = function() {
+        sketch.delegate.terminate();
+    }
 
     c.frameCount = 0;
     c.broadcast = function() {
@@ -24,55 +46,73 @@ function install_builtins(c, sketch) {
             sketch._broad_arguments[arguments[i]] = true;
         }
     };
-    c.allosphere = al;
+
+    // Common data types.
+    c.Float32Array = Float32Array;
+    c.Float64Array = Float64Array;
+
+    c.Allosphere = al;
     c.GL = al.OpenGL;
-    c.graphics = graphics;
+    c.Graphics = graphics;
+    c.WebGL = webgl;
+
     // Allow require.
     c.require = require;
 }
 
 function Sketch(name) {
     this.name = name;
+    this.working_directory = (new ProjectManager(name)).root;
 }
 
-
-Sketch.prototype.loadCode = function(code) {
+Sketch.prototype.loadCode = function(project) {
+    var self = this;
     this.context = vm.createContext();
-    this.code = code;
+    this.project = project;
     install_builtins(this.context, this);
-
     try {
-        vm.runInContext(code, this.context);
+        this.scripts = this.project.tabs.map(function(tab, index) {
+            if(self.project.language == "coffee-script") {
+                return new vm.Script(coffeescript.compile(tab.code), "__code__" + index);
+            } else {
+                return new vm.Script(tab.code, "__code__" + index);
+            }
+        });
+    } catch(e) {
+        this._reportException(e);
+        return;
+    }
+    try {
+        process.chdir(this.working_directory);
+        for(var i = 0; i < this.scripts.length; i++) {
+            this.scripts[i].runInContext(this.context);
+        }
+    } catch(e) {
+        this._reportException(e);
+    }
+};
+
+Sketch.prototype.callFunction = function(name) {
+    if(!this.context) return;
+    try {
+        process.chdir(this.working_directory);
+        if(this.context[name]) {
+            vm.runInContext(name + "();", this.context);
+        }
     } catch(e) {
         this._reportException(e);
     }
 };
 
 Sketch.prototype.setupRender = function() {
-    if(!this.context) return;
-    try {
-        if(this.context.setupRender) {
-            vm.runInContext("setupRender()", this.context);
-        } else if(this.context.setupDraw) {
-            vm.runInContext("setupDraw()", this.context);
-        }
-    } catch(e) {
-        this._reportException(e);
-    }
+    this.callFunction("setupRender");
+    this.callFunction("setupDraw");
 };
 
 Sketch.prototype.render = function() {
     if(!al) initializeAllosphere();
-    if(!this.context) return;
-    try {
-        if(this.context.render) {
-            vm.runInContext("render()", this.context);
-        } else if(this.context.draw) {
-            vm.runInContext("draw()", this.context);
-        }
-    } catch(e) {
-        this._reportException(e);
-    }
+    this.callFunction("render");
+    this.callFunction("draw");
 };
 
 Sketch.prototype.setupSimulator = function() {
@@ -86,15 +126,9 @@ Sketch.prototype.setupSimulator = function() {
         timestamp: true
     };
 
-    try {
-        if(this.context.setupSimulator) {
-            vm.runInContext("setupSimulator()", this.context);
-        } else if(this.context.setupUpdate) {
-            vm.runInContext("setupUpdate()", this.context);
-        }
-    } catch(e) {
-        this._reportException(e);
-    }
+    this.callFunction("setupSimulator");
+    this.callFunction("setupUpdate");
+
     this._performBroadcast();
 };
 
@@ -108,15 +142,8 @@ Sketch.prototype.simulator = function() {
         frameCount: true,
         timestamp: true
     };
-    try {
-        if(this.context.simulator) {
-            vm.runInContext("simulator()", this.context);
-        } else if(this.context.update) {
-            vm.runInContext("update()", this.context);
-        }
-    } catch(e) {
-        this._reportException(e);
-    }
+    this.callFunction("simulator");
+    this.callFunction("update");
     this._performBroadcast();
 };
 
@@ -142,12 +169,74 @@ Sketch.prototype._performBroadcast = function() {
     this.delegate.broadcast(bcast_message);
 };
 
-Sketch.prototype._postMessage = function(str) {
-    console.log("[Sketch '" + this.name + "'] " + str);
+Sketch.prototype._postMessage = function(message) {
+    this.delegate.postMessage(message);
 };
 
 Sketch.prototype._reportException = function(e) {
-    this._postMessage(e.stack);
+    this._postMessage({
+        type: "exception",
+        stack: e.stack,
+        text: e.message
+    });
+    this.delegate.terminate();
+};
+
+function ProjectManager(name) {
+    if(!name.match(/^[0-9a-zA-Z\.\-\_\ ]+$/)) {
+        throw new Error("E_INVALID_PROJECT_NAME");
+    }
+    this.root = path.join(config.workspace_directory, name + ".project");
+    this.name = name;
+};
+
+ProjectManager.prototype._getPath = function(file) {
+    return path.join(this.root, file);
+};
+
+ProjectManager.prototype._ensureDirectory = function() {
+    fs.ensureDirSync(this.root);
+};
+
+ProjectManager.prototype.listFiles = function() {
+    this._ensureDirectory();
+    var files = fs.readdirSync(this.root);
+    files = files.filter(function(filename) {
+        var path = this._getPath(filename);
+        return fs.statSync(path).isFile();
+    });
+};
+
+ProjectManager.prototype.renameFile = function(dest, src) {
+    this._ensureDirectory();
+    fs.renameSync(this._getPath(src), this._getPath(dest));
+};
+
+ProjectManager.prototype.uploadFile = function(dest, content) {
+    this._ensureDirectory();
+    fs.writeFileSync(dest, content);
+};
+
+ProjectManager.prototype.saveProject = function(project) {
+    this._ensureDirectory();
+    fs.writeFileSync(this._getPath("code.json"), JSON.stringify(project));
+};
+
+ProjectManager.prototype.loadProject = function() {
+    return JSON.parse(fs.readFileSync(this._getPath("code.json")));
+};
+
+ProjectManager.listProjects = function() {
+    var dirs = fs.readdirSync(config.workspace_directory);
+    dirs = dirs.filter(function(filename) {
+        var path = config.workspace_directory + "/" + filename;
+        return fs.statSync(path).isDirectory() && filename.substr(-8) == ".project";
+    });
+    dirs = dirs.map(function(x) {
+        return x.slice(0, x.length - 8);
+    });
+    return dirs;
 };
 
 exports.Sketch = Sketch;
+exports.ProjectManager = ProjectManager;

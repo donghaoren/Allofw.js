@@ -17,10 +17,36 @@ body {
     background-color: white;
 }
 
-#text-code {
+#log-area {
+    position: fixed;
+    left: 0; right: 0;
+    bottom: 0;
+    height: 120px;
+    z-index: 10;
+    background-color: white;
+    border-top: 1px solid gray;
+    overflow: scroll;
+    & > div {
+        white-space: pre ; display: block; unicode-bidi: embed;
+        font-family: "Monaco", "Menlo", monospace;
+        font-size: 11px;
+        padding: 2px 1em;
+        border-bottom: 1px solid #EEE;
+        &.exception {
+            color: #d62728;
+            & > div { display: none; }
+        }
+    }
+}
+
+#file-area {
+}
+
+#text-area {
     font-size: 13px;
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 0;
+    top: 30px;
+    bottom: 120px;
 }

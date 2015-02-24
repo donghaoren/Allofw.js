@@ -1,6 +1,7 @@
 var fs = require('fs');
 var yaml = require('js-yaml');
 var os = require("os");
+var path = require("path");
 
 var config = yaml.safeLoad(fs.readFileSync('config.yaml', 'utf8'));
 
@@ -15,3 +16,5 @@ if(config[hostname]) {
         exports[key] = config[hostname][key];
     }
 }
+
+exports.workspace_directory = path.resolve(exports.workspace_directory);

@@ -1725,10 +1725,37 @@ body {
   z-index: 10;
   background-color: white;
 }
-#text-code {
-  font-size: 13px;
+#log-area {
   position: fixed;
   left: 0;
   right: 0;
   bottom: 0;
+  height: 120px;
+  z-index: 10;
+  background-color: white;
+  border-top: 1px solid gray;
+  overflow: scroll;
+}
+#log-area > div {
+  white-space: pre ;
+  display: block;
+  unicode-bidi: embed;
+  font-family: "Monaco", "Menlo", monospace;
+  font-size: 11px;
+  padding: 2px 1em;
+  border-bottom: 1px solid #EEE;
+}
+#log-area > div.exception {
+  color: #d62728;
+}
+#log-area > div.exception > div {
+  display: none;
+}
+#text-area {
+  font-size: 13px;
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 30px;
+  bottom: 120px;
 }

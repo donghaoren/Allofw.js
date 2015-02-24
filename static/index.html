@@ -4,237 +4,100 @@
     <meta charset="utf-8" />
     <title>Allosphere Javascript Framework</title>
     <script src="libraries/d3.v3.min.js" type="text/javascript"></script>
+    <script src="libraries/md5.min.js" type="text/javascript"></script>
     <script src="libraries/jquery-2.1.3.min.js" type="text/javascript"></script>
     <script src="libraries/wampy-all.min.js" type="text/javascript"></script>
     <script src="libraries/codemirror-compressed.js" type="text/javascript"></script>
+    <script src="bootstrap/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="//code.jquery.com/ui/1.11.3/jquery-ui.js"></script>
     <link rel="stylesheet" href="bootstrap/css/bootstrap.css">
     <link rel="stylesheet" href="styles/style.css">
   </head>
   <body>
-    <div id="toolbar" class="form-inline">
-        Sketch Name: <input type="text" class="form-control input-sm" value="Untitled" id="text-name" placeholder="Sketch Name" />
+    <div id="toolbar" class="form-inline nav nav-pills">
+        <!-- Sketch Name: <input type="text" class="form-control input-sm" value="Untitled" id="text-name" placeholder="Sketch Name" /> -->
         <span class="btn btn-sm btn-success" id="btn-run">Run</span>
         <span class="btn btn-sm btn-danger" id="btn-stop">Stop</span>
-        <span class="pull-right">Theme: <select id="select-theme" class="form-control input-sm">
-            <option selected>default</option>
-            <option>3024-day</option>
-            <option>3024-night</option>
-            <option>ambiance</option>
-            <option>base16-dark</option>
-            <option>base16-light</option>
-            <option>blackboard</option>
-            <option>cobalt</option>
-            <option>colorforth</option>
-            <option>eclipse</option>
-            <option>elegant</option>
-            <option>erlang-dark</option>
-            <option>lesser-dark</option>
-            <option>mbo</option>
-            <option>mdn-like</option>
-            <option>midnight</option>
-            <option>monokai</option>
-            <option>neat</option>
-            <option>neo</option>
-            <option>night</option>
-            <option>paraiso-dark</option>
-            <option>paraiso-light</option>
-            <option>pastel-on-dark</option>
-            <option>rubyblue</option>
-            <option>solarized dark</option>
-            <option>solarized light</option>
-            <option>the-matrix</option>
-            <option>tomorrow-night-bright</option>
-            <option>tomorrow-night-eighties</option>
-            <option>twilight</option>
-            <option>vibrant-ink</option>
-            <option>xq-dark</option>
-            <option>xq-light</option>
-            <option>zenburn</option>
-        </select></span>
+        <span class="pull-right">
+            Colorscheme:
+            <select id="select-theme" class="form-control input-sm">
+                <option selected>default</option><option>3024-day</option><option>3024-night</option><option>ambiance</option><option>base16-dark</option><option>base16-light</option><option>blackboard</option><option>cobalt</option><option>colorforth</option><option>eclipse</option><option>elegant</option><option>erlang-dark</option><option>lesser-dark</option><option>mbo</option><option>mdn-like</option><option>midnight</option><option>monokai</option><option>neat</option><option>neo</option><option>night</option><option>paraiso-dark</option><option>paraiso-light</option><option>pastel-on-dark</option><option>rubyblue</option><option>solarized dark</option><option>solarized light</option><option>the-matrix</option><option>tomorrow-night-bright</option><option>tomorrow-night-eighties</option><option>twilight</option><option>vibrant-ink</option><option>xq-dark</option><option>xq-light</option><option>zenburn</option>
+            </select>
+        </span>
+        <div class="dropdown" style="display: inline-block">
+            <span class="btn btn-default btn-sm dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-expanded="true">
+                <span class="tabsbutton" style="min-width: 10em; display:inline-block; text-align: left;">Main</span>
+                <span class="caret"></span>
+            </span>
+            <script type="text/plain" id="template-tab-list">
+                <li role="presentation" class="tablist-item">
+                    <a role="menuitem" tabindex="-1" href="#" data-text-from="name" onclick="SetCurrentTab($(this).parent().data().tab)"></a>
+                </li>
+            </script>
+            <ul class="dropdown-menu" id="menu-tab-list" role="menu" aria-labelledby="dropdownMenu1">
+                <li role="presentation" class="divider"></li>
+                <li role="presentation"><a role="menuitem" data-toggle="modal" data-target="#modal-manage-tabs" tabindex="-1" href="#">Manage Tabs...</a></li>
+            </ul>
+        </div>
+        <span class="btn btn-sm btn-primary" id="btn-save">Save</span>
     </div>
-    <div id="text-code"></div>
-    <script type="text/plain" id="sample-code">
-var particles = [ ];
+    <div id="log-area"></div>
+    <div id="file-area"></div>
+    <div id="text-area"><div id="text-code"></div></div>
+    <!-- Small modal -->
+    <!-- Modal -->
+    <div class="modal fade" id="modal-manage-tabs" tabindex="-1" role="dialog" aria-labelledby="model-label-manage-tabs" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="model-label-manage-tabs">Manage Tabs</h4>
+          </div>
+          <div class="modal-body">
+              <script type="text/plain" id="template-modal-tab-list">
+                  <li class="list-group-item clearfix form-inline">
+                      <input type="text" class="form-control input-sm" data-value-from="name" />
+                      <span class="btn-default btn btn-sm" onclick="if($('#modal-manage-tabs-tab-list').children().length > 1) $(this).parent().slideUp(undefined, function() { $(this).remove(); })">Delete</span>
+                  </li>
+              </script>
+              <ul class="list-group sortable" id="modal-manage-tabs-tab-list"></ul>
+              <hr />
+              <div class="form-inline">
+                  <div class="form-group">
+                      <label>Tab Name</label>
+                      <input type="text" class="form-control input-sm" id="modal-manage-tabs-new-tab-name" />
+                  </div>
+                  <span class="btn btn-sm btn-default" id="modal-manage-tabs-new-tab">New Tab</span>
+              </div>
+          </div>
+          <div class="modal-footer">
+            <span class="btn btn-default" data-dismiss="modal">Cancel</span>
+            <span class="btn btn-primary" id="modal-manage-tabs-confirm">Confirm</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal fade" id="modal-startup" tabindex="-1" role="dialog" aria-labelledby="modal-label-startup" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h4 class="modal-title" id="modal-label-startup">Allosphere Javascript Framework</h4>
+          </div>
+          <div class="modal-body">
+            <script type="text/plain" id="template-modal-startup-project-list">
+                <li class="list-group-item clearfix">
+                    <span data-text-from="name"></span>
+                    <span class="pull-right btn btn-sm btn-default" onclick="Project_Load($(this).parent().data().name);">Load</span>
+                </li>
+            </script>
+            <ul class="list-group" id="modal-startup-project-list">
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
 
-function vlen(x, y, z) {
-    return sqrt(x * x + y * y + z * z);
-}
-
-function setupUpdate() {
-    var N = 100;
-    var scale = 5;
-    for(var i = 0; i < N; i++) {
-        particles.push({
-            px: scale * (random() - 0.5), vx: 0,
-            py: scale * (random() - 0.5), vy: 0,
-            pz: scale * (random() - 0.5), vz: 0
-        })
-    }
-    broadcast("particles");
-}
-
-function update() {
-    var dt = 0.005;
-    var gravity = 0.2;
-    var vatt = 2;
-    var kspring = 1;
-    var d0 = 3;
-    var steps = 2;
-    for(var step = 0; step < steps; step++) {
-        for(var i = 0; i < particles.length; i++) {
-            particles[i].ax = 0;
-            particles[i].ay = 0;
-            particles[i].az = 0;
-        }
-        for(var i = 0; i < particles.length; i++) {
-            var d = vlen(particles[i].px, particles[i].py, particles[i].pz);
-            var s = gravity / d / d / d;
-            particles[i].ax += -particles[i].px * s;
-            particles[i].ay += -particles[i].py * s;
-            particles[i].az += -particles[i].pz * s;
-        }
-        for(var i = 0; i < particles.length; i++) {
-            for(var j = i + 1; j < particles.length; j++) {
-                var dx = particles[i].px - particles[j].px;
-                var dy = particles[i].py - particles[j].py;
-                var dz = particles[i].pz - particles[j].pz;
-                var d = vlen(dx, dy, dz);
-                var s = kspring * (d - d0) * (d - d0) / d * (d > d0 ? -1 : 1);
-                particles[i].ax += dx * s;
-                particles[i].ay += dy * s;
-                particles[i].az += dz * s;
-                particles[j].ax -= dx * s;
-                particles[j].ay -= dy * s;
-                particles[j].az -= dz * s;
-            }
-        }
-        for(var i = 0; i < particles.length; i++) {
-            var s = vatt;
-            particles[i].ax += -particles[i].vx * s;
-            particles[i].ay += -particles[i].vy * s;
-            particles[i].az += -particles[i].vz * s;
-        }
-
-        for(var i = 0; i < particles.length; i++) {
-            particles[i].px += particles[i].vx * dt;
-            particles[i].py += particles[i].vy * dt;
-            particles[i].pz += particles[i].vz * dt;
-            particles[i].vx += particles[i].ax * dt;
-            particles[i].vy += particles[i].ay * dt;
-            particles[i].vz += particles[i].az * dt;
-        }
-    }
-    var angle = frameCount / 100;
-    var s = 2;
-    particles[0].px = s * sin(angle);
-    particles[0].py = s * cos(angle);
-    particles[0].pz = sin(angle * 10) / 5;
-    broadcast("particles");
-}
-
-function event(e) {
-
-}
-
-function draw() {
-    var draw_cube = function(x, y, z, scale) {
-        GL.begin(GL.QUADS);
-        GL.normal3f(+1, 0, 0);
-        GL.vertex3f(x + scale, y + scale, z + scale);
-        GL.vertex3f(x + scale, y - scale, z + scale);
-        GL.vertex3f(x + scale, y - scale, z - scale);
-        GL.vertex3f(x + scale, y + scale, z - scale);
-        GL.normal3f(-1, 0, 0);
-        GL.vertex3f(x - scale, y + scale, z + scale);
-        GL.vertex3f(x - scale, y + scale, z - scale);
-        GL.vertex3f(x - scale, y - scale, z - scale);
-        GL.vertex3f(x - scale, y - scale, z + scale);
-
-        GL.normal3f(0, +1, 0);
-        GL.vertex3f(x + scale, y + scale, z + scale);
-        GL.vertex3f(x + scale, y + scale, z - scale);
-        GL.vertex3f(x - scale, y + scale, z - scale);
-        GL.vertex3f(x - scale, y + scale, z + scale);
-        GL.normal3f(0, -1, 0);
-        GL.vertex3f(x + scale, y - scale, z + scale);
-        GL.vertex3f(x - scale, y - scale, z + scale);
-        GL.vertex3f(x - scale, y - scale, z - scale);
-        GL.vertex3f(x + scale, y - scale, z - scale);
-
-        GL.normal3f(0, 0, +1);
-        GL.vertex3f(x + scale, y + scale, z + scale);
-        GL.vertex3f(x - scale, y + scale, z + scale);
-        GL.vertex3f(x - scale, y - scale, z + scale);
-        GL.vertex3f(x + scale, y - scale, z + scale);
-        GL.normal3f(0, 0, -1);
-        GL.vertex3f(x + scale, y + scale, z - scale);
-        GL.vertex3f(x + scale, y - scale, z - scale);
-        GL.vertex3f(x - scale, y - scale, z - scale);
-        GL.vertex3f(x - scale, y + scale, z - scale);
-        GL.end(GL.QUADS);
-    };
-    allosphere.shaderBegin(allosphere.shaderDefault());
-    allosphere.shaderUniformf("lighting", 1);
-    for(var i = 0; i < particles.length; i++) {
-        var d = vlen(particles[i].px, particles[i].py, particles[i].pz);
-        if(d > 0.5) {
-            draw_cube(particles[i].px, particles[i].py, particles[i].pz, 0.1);
-        }
-    }
-    allosphere.shaderEnd(allosphere.shaderDefault());
-}
-    </script>
-    <script type="text/javascript">
-        var editor = CodeMirror($("#text-code").get(0), {
-            value: $("#sample-code").html().trim(),
-            lineNumbers: true,
-            mode: "javascript",
-            keyMap: "sublime",
-            indentUnit: 4,
-            autoCloseBrackets: true,
-            matchBrackets: true,
-            showCursorWhenSelecting: true,
-            theme: "default"
-        });
-        $("#select-theme").change(function() {
-            editor.setOption("theme", $("#select-theme").val());
-        });
-
-        $(window).resize(function() {
-            $("#text-code").css("top", $("#toolbar").outerHeight() + "px");
-            editor.setSize($("#text-code").width(), $(window).height() - $("#toolbar").height());
-        });
-        $(window).resize();
-
-        var wamp = new Wampy("/ws", { realm: "anonymous" });
-        var response_t = {
-            onSuccess: function() {},
-            onError: function(err) { console.log('RPC call failed with error ' + err); }
-        };
-
-        function Sketch_Run(name, code) {
-            wamp.call("allofw.sketch.run", {
-                name: name,
-                code: code
-            }, response_t);
-        }
-
-        function Sketch_Stop(name) {
-            wamp.call("allofw.sketch.stop", {
-                name: name
-            }, response_t);
-        }
-
-        $("#btn-run").click(function() {
-            var name = $("#text-name").val();
-            var code = editor.getValue();
-            Sketch_Run(name, code);
-        });
-
-        $("#btn-stop").click(function() {
-            var name = $("#text-name").val();
-            Sketch_Stop(name);
-        });
-    </script>
+    <script type="text/javascript" src="scripts/sketch.js"></script>
+    <script type="text/javascript" src="scripts/main.js"></script>
   </body>
 </html>

@@ -1,0 +1,10 @@
+broadcast: "tcp://127.0.0.1:3000"
+server: "tcp://127.0.0.1:3001"
+events: "tcp://127.0.0.1:3002"
+renderer_events: "tcp://127.0.0.1:3003"
+
+workspace_directory: ./workspace
+
+role: "renderer,simulator"
+
+main_renderer: true

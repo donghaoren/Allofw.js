@@ -5,6 +5,7 @@ var zmq = require("zmq");
 var msgpack = require("msgpack");
 var al = require("node_allosphere");
 al.initialize();
+require("node-webgl").webgl.Init();
 
 var Sketch = require("./sketch.js").Sketch;
 
@@ -19,6 +20,8 @@ function Renderer() {
     this.sub = zmq.socket("sub");
     this.sub.connect(config.broadcast);
     this.sub.subscribe("");
+    this.push = zmq.socket("push");
+    this.push.connect(config.renderer_events);
 
     this.sub.on("message", function(data) {
         var message;
@@ -50,21 +53,51 @@ Renderer.prototype.broadcast = function(message) {
     this.pub.send(data);
 };
 
+Renderer.prototype.push_to_controller = function(message) {
+    var data = msgpack.pack(message);
+    this.push.send(data);
+};
+
 Renderer.prototype.onMessage = function(message) {
     var self = this;
     if(message.type == "render") {
         al.tick();
     }
     if(message.type == "sketch.message") {
-        this.sketches[message.sketch].onMessage(message.message);
+        if(this.sketches[message.sketch])
+            this.sketches[message.sketch].onMessage(message.message);
     }
     if(message.type == "sketch.run") {
         var sketch = new Sketch(message.name);
         this.sketches[message.name] = sketch;
-        sketch.loadCode(message.code);
         sketch.delegate = {
-            broadcast: function() { }
+            broadcast: function() {
+                // We don't support broadcast in renderer.
+                throw new Exception("broadcast() is not allowed in render().");
+            },
+            postMessage: function(msg) {
+                if(self.isMainRenderer) {
+                    self.push_to_controller({
+                        type: "sketch.log",
+                        name: sketch.name,
+                        message: msg
+                    });
+                }
+                if(message.type == "stop") {
+                    self.push_to_controller({
+                        type: "sketch.stop",
+                        name: sketch.name
+                    });
+                }
+            },
+            terminate: function() {
+                self.push_to_controller({
+                    type: "sketch.stop",
+                    name: sketch.name
+                });
+            }
         };
+        sketch.loadCode(message.code);
         sketch.setupRender();
     }
     if(message.type == "sketch.stop") {
