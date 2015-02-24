@@ -8,3 +8,7 @@ workspace_directory: ./workspace
 role: "renderer,simulator"
 
 main_renderer: true
+
+webserver:
+    listen: 127.0.0.1
+    port: 8000

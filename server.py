@@ -152,6 +152,6 @@ resource = WebSocketResource(factory)
 root.putChild("ws", resource)
 
 site = Site(root)
-reactor.listenTCP(8000, site, interface = "127.0.0.1")
+reactor.listenTCP(int(config['webserver']['port']), site, config['webserver']['listen'])
 
 reactor.run()
