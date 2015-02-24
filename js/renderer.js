@@ -18,8 +18,14 @@ function Renderer() {
     this.sketches = { };
 
     this.sub = zmq.socket("sub");
+    this.sub.setsockopt(zmq.ZMQ_RCVHWM, config.zmq.rcvhwm);
+    this.sub.setsockopt(zmq.ZMQ_SNDHWM, config.zmq.sndhwm);
+    this.sub.setsockopt(zmq.ZMQ_RCVBUF, config.zmq.rcvbuf);
+    this.sub.setsockopt(zmq.ZMQ_SNDBUF, config.zmq.sndbuf);
+    this.sub.setsockopt(zmq.ZMQ_RATE, config.zmq.rate);
     this.sub.connect(config.broadcast);
     this.sub.subscribe("");
+
     this.push = zmq.socket("push");
     this.push.connect(config.renderer_events);
 

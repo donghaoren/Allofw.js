@@ -20,6 +20,11 @@ function Controller() {
     this.socket_rep.bind(config.server);
 
     this.socket_pub = zmq.socket("pub");
+    this.socket_pub.setsockopt(zmq.ZMQ_RCVHWM, config.zmq.rcvhwm);
+    this.socket_pub.setsockopt(zmq.ZMQ_SNDHWM, config.zmq.sndhwm);
+    this.socket_pub.setsockopt(zmq.ZMQ_RCVBUF, config.zmq.rcvbuf);
+    this.socket_pub.setsockopt(zmq.ZMQ_SNDBUF, config.zmq.sndbuf);
+    this.socket_pub.setsockopt(zmq.ZMQ_RATE, config.zmq.rate);
     this.socket_pub.bind(config.broadcast);
 
     this.socket_events = zmq.socket("pub");
