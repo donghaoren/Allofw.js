@@ -123,6 +123,13 @@ function Project_Load(name) {
     });
 }
 
+$("#modal-startup-new-project").click(function() {
+    var name = $("#modal-startup-project-name").val().trim();
+    if(name == "") return;
+    LoadProject(new Project(name));
+    $("#modal-startup").modal("hide");
+});
+
 $(function() {
     $("#modal-startup").modal("show");
     wamp.call("allofw.project.list", { }, {
